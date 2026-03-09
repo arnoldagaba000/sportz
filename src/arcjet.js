@@ -1,3 +1,4 @@
+import { isSpoofedBot } from "@arcjet/inspect";
 import arcjet, { detectBot, shield, slidingWindow } from "@arcjet/node";
 import "dotenv/config";
 
@@ -51,8 +52,10 @@ export function securityMiddleware() {
 
 		try {
 			const decision = await httpArcjet.protect(req);
-			if (decision.isDenied) {
-				if (decision.reason.isRateLimit) {
+			const isSpoofed = decision.results?.some(isSpoofedBot) ?? false;
+
+			if (decision.isDenied() || isSpoofed) {
+				if (decision.isDenied() && decision.reason.isRateLimit()) {
 					return res.status(429).json({ error: "Too many requests" });
 				}
 
@@ -63,6 +66,6 @@ export function securityMiddleware() {
 			return res.status(503).json({ error: "Service Unavailable" });
 		}
 
-        next();
+		next();
 	};
 }

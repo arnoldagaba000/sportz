@@ -1,3 +1,4 @@
+import { isSpoofedBot } from "@arcjet/inspect";
 import { WebSocket, WebSocketServer } from "ws";
 import { wsArcjet } from "../arcjet.js";
 
@@ -57,15 +58,19 @@ export function attachWebSocketServer(server) {
 		maxPayload: 1024 * 1024,
 	});
 
-	wss.on("connection", async (socket) => {
+	wss.on("connection", async (socket, request) => {
 		if (wsArcjet) {
 			try {
-				const decision = await wsArcjet.protect(socket);
-				if (decision.isDenied) {
-					const code = decision.reason.isRateLimit() ? 1013 : 1008;
-					const reason = decision.reason.isRateLimit()
-						? "Too many requests"
-						: "Access Denied";
+				const decision = await wsArcjet.protect(request);
+				const isSpoofed = decision.results?.some(isSpoofedBot) ?? false;
+
+				if (decision.isDenied() || isSpoofed) {
+					const code =
+						decision.isDenied() && decision.reason.isRateLimit() ? 1013 : 1008;
+					const reason =
+						decision.isDenied() && decision.reason.isRateLimit()
+							? "Too many requests"
+							: "Access Denied";
 					socket.close(code, reason);
 					return;
 				}
