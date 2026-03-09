@@ -1,5 +1,6 @@
 import http from "node:http";
 import express from "express";
+import { securityMiddleware } from "./arcjet.js";
 import { matchRouter } from "./routes/matches.js";
 import { attachWebSocketServer } from "./ws/server.js";
 
@@ -14,6 +15,8 @@ app.use(express.json());
 app.get("/", (req, res) => {
 	res.send("Server is running");
 });
+
+app.use(securityMiddleware());
 
 app.use("/matches", matchRouter);
 
