@@ -1,4 +1,6 @@
+import { isSpoofedBot } from "@arcjet/inspect";
 import { WebSocket, WebSocketServer } from "ws";
+import { wsArcjet } from "../arcjet.js";
 
 /**
  * Sends a JSON payload over the given WebSocket socket.
@@ -36,24 +38,18 @@ function broadcast(wss, payload) {
 
 /**
  * Attaches a WebSocketServer to a given HTTP server.
- *
- * The WebSocketServer is configured to listen on the path "/ws" and
- * has a maximum payload size of 1024 * 1024 bytes.
- *
- * When a client connects, a "welcome" JSON payload is sent to the
- * client.
- *
- * Every 30 seconds, the server sends a "pong" frame to each
- * client. If a client does not respond with a "pong" frame within
- * 30 seconds, the client is considered dead and is terminated.
- *
- * When the WebSocketServer is closed, the interval that sends the
- * "pong" frames is cleared.
- *
- * @param {http.Server} server - The HTTP server to attach the
- * WebSocketServer to.
- * @returns {Object} An object with a single method, broadcastMatchCreated,
- * which sends a "match_created" JSON payload to all connected clients.
+ * The WebSocketServer is configured to listen on the "/ws" path.
+ * The server is configured to allow a maximum payload of 1MB.
+ * The server is also configured to perform rate limiting and access control using Arcjet.
+ * If the request is allowed, the server sends a welcome message to the client.
+ * If the request is rate limited, the server sends a 1013 error code with a "Too many requests" reason.
+ * If the request is denied, the server sends a 1008 error code with an "Access Denied" reason.
+ * If there is an error with Arcjet, the server sends a 1011 error code with a "Server security error" reason.
+ * Every 30 seconds, the server sends a ping message to all connected clients.
+ * If a client does not respond to the ping message, the server terminates the connection.
+ * When the server is closed, the server clears the interval timer.
+ * @param {http.Server} server - The HTTP server to attach the WebSocketServer to.
+ * @returns {{ broadcastMatchCreated: (match: Object) => void }}
  */
 export function attachWebSocketServer(server) {
 	const wss = new WebSocketServer({
@@ -62,7 +58,29 @@ export function attachWebSocketServer(server) {
 		maxPayload: 1024 * 1024,
 	});
 
-	wss.on("connection", (socket) => {
+	wss.on("connection", async (socket, request) => {
+		if (wsArcjet) {
+			try {
+				const decision = await wsArcjet.protect(request);
+				const isSpoofed = decision.results?.some(isSpoofedBot) ?? false;
+
+				if (decision.isDenied() || isSpoofed) {
+					const code =
+						decision.isDenied() && decision.reason.isRateLimit() ? 1013 : 1008;
+					const reason =
+						decision.isDenied() && decision.reason.isRateLimit()
+							? "Too many requests"
+							: "Access Denied";
+					socket.close(code, reason);
+					return;
+				}
+			} catch (error) {
+				console.error("WS connection error:", error);
+				socket.close(1011, "Server security error");
+				return;
+			}
+		}
+
 		socket.isAlive = true;
 		socket.on("pong", () => {
 			socket.isAlive = true;
