@@ -130,6 +130,18 @@ async function createMatch(seedMatch) {
 }
 
 async function insertCommentary(matchId, entry) {
+	if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+		let entryDescription = String(entry);
+		try {
+			entryDescription = JSON.stringify(entry);
+		} catch {
+			// Keep the fallback string representation.
+		}
+		throw new Error(
+			`Seed commentary entry is invalid (matchId: ${matchId}): ${entryDescription}`,
+		);
+	}
+
 	const requiredKeys = [
 		"minute",
 		"sequence",
