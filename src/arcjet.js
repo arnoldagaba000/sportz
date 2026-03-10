@@ -33,7 +33,11 @@ export const wsArcjet = arcjetKey
 				slidingWindow({ mode: arcjetMode, interval: "2s", max: 5 }),
 			],
 		})
-	: null;
+		: null;
+
+export function isLoopbackAddress(ip = "") {
+	return ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1";
+}
 
 /**
  * A middleware function that uses Arcjet to protect against malicious traffic.
@@ -47,11 +51,7 @@ export function securityMiddleware() {
 		try {
 			if (process.env.NODE_ENV !== "production") {
 				const ip = req.ip ?? "";
-				if (
-					ip === "127.0.0.1" ||
-					ip === "::1" ||
-					ip === "::ffff:127.0.0.1"
-				) {
+				if (isLoopbackAddress(ip)) {
 					return next();
 				}
 			}

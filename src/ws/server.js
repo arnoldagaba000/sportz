@@ -1,6 +1,6 @@
 import { isSpoofedBot } from "@arcjet/inspect";
 import { WebSocket, WebSocketServer } from "ws";
-import { wsArcjet } from "../arcjet.js";
+import { isLoopbackAddress, wsArcjet } from "../arcjet.js";
 
 const matchSubscribers = new Map();
 
@@ -103,14 +103,6 @@ function broadcastToMatch(matchId, payload) {
 	}
 }
 
-function isLocalIp(address) {
-	return (
-		address === "127.0.0.1" ||
-		address === "::1" ||
-		address === "::ffff:127.0.0.1"
-	);
-}
-
 /**
  * Handles an incoming message from a WebSocket client.
  * If the message is a subscription request, the client is subscribed to the given match ID.
@@ -126,6 +118,7 @@ function handleMessage(socket, data) {
 		message = JSON.parse(data.toString());
 	} catch {
 		sendJson(socket, { type: "error", message: "Invalid JSON" });
+		return;
 	}
 
 	if (message.type === "subscribe" && Number.isInteger(message.matchId)) {
@@ -159,7 +152,7 @@ export function attachWebSocketServer(server) {
 	wss.on("connection", async (socket, request) => {
 		const remoteAddress = request.socket?.remoteAddress ?? "";
 		const isLocal =
-			process.env.NODE_ENV !== "production" && isLocalIp(remoteAddress);
+			process.env.NODE_ENV !== "production" && isLoopbackAddress(remoteAddress);
 
 		if (wsArcjet && !isLocal) {
 			try {
