@@ -45,6 +45,21 @@ export const wsArcjet = arcjetKey
 export function securityMiddleware() {
 	return async (req, res, next) => {
 		try {
+			if (process.env.NODE_ENV !== "production") {
+				const ip = req.ip ?? "";
+				if (
+					ip === "127.0.0.1" ||
+					ip === "::1" ||
+					ip === "::ffff:127.0.0.1"
+				) {
+					return next();
+				}
+			}
+
+			if (!req.headers["user-agent"]) {
+				req.headers["user-agent"] = "unknown";
+			}
+
 			const decision = await httpArcjet.protect(req);
 			const isSpoofed = decision.results?.some(isSpoofedBot) ?? false;
 
