@@ -21,7 +21,7 @@ app.get("/", (req, res) => {
 	res.send("Server is running");
 });
 
-// app.use(securityMiddleware());
+app.use(securityMiddleware());
 
 app.use("/matches", matchRouter);
 app.use("/matches/:id/commentary", commentaryRouter);
