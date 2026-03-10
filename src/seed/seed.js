@@ -130,37 +130,49 @@ async function createMatch(seedMatch) {
 }
 
 async function insertCommentary(matchId, entry) {
+	if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+		let entryDescription = String(entry);
+		try {
+			entryDescription = JSON.stringify(entry);
+		} catch {
+			// Keep the fallback string representation.
+		}
+		throw new Error(
+			`Seed commentary entry is invalid (matchId: ${matchId}): ${entryDescription}`,
+		);
+	}
+
+	const requiredKeys = [
+		"minute",
+		"sequence",
+		"period",
+		"eventType",
+		"actor",
+		"team",
+		"message",
+		"metadata",
+		"tags",
+	];
+	const missingKeys = requiredKeys.filter(
+		(key) => entry[key] === undefined || entry[key] === null,
+	);
+	if (missingKeys.length > 0) {
+		throw new Error(
+			`Seed commentary entry is missing required fields: ${missingKeys.join(", ")} (matchId: ${matchId})`,
+		);
+	}
+
 	const payload = {
-		message: entry.message ?? "Update",
+		minute: entry.minute,
+		sequence: entry.sequence,
+		period: entry.period,
+		eventType: entry.eventType,
+		actor: entry.actor,
+		team: entry.team,
+		message: entry.message,
+		metadata: entry.metadata,
+		tags: entry.tags,
 	};
-	if (entry.minute !== undefined && entry.minute !== null) {
-		payload.minute = entry.minute;
-	}
-	if (entry.sequence !== undefined && entry.sequence !== null) {
-		payload.sequence = entry.sequence;
-	}
-	if (entry.period !== undefined && entry.period !== null) {
-		payload.period = entry.period;
-	}
-	if (entry.eventType !== undefined && entry.eventType !== null) {
-		payload.eventType = entry.eventType;
-	}
-	if (entry.actor !== undefined && entry.actor !== null) {
-		payload.actor = entry.actor;
-	}
-	if (entry.team !== undefined && entry.team !== null) {
-		payload.team = entry.team;
-	}
-	if (entry.metadata !== undefined && entry.metadata !== null) {
-		payload.metadata = entry.metadata;
-	} else {
-		payload.metadata = {};
-	}
-	if (entry.tags !== undefined && entry.tags !== null) {
-		payload.tags = entry.tags;
-	} else {
-		payload.tags = [];
-	}
 
 	const response = await fetch(`${API_URL}/matches/${matchId}/commentary`, {
 		method: "POST",

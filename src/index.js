@@ -1,7 +1,4 @@
 import AgentAPI from "apminsight";
-
-AgentAPI.config();
-
 import http from "node:http";
 import express from "express";
 import { securityMiddleware } from "./arcjet.js";
@@ -11,6 +8,17 @@ import { attachWebSocketServer } from "./ws/server.js";
 
 const PORT = Number(process.env.PORT ?? 8000);
 const HOST = process.env.HOST ?? "0.0.0.0";
+
+const apmLicenseKey = process.env.APM_LICENSE_KEY;
+if (apmLicenseKey) {
+	AgentAPI.config({
+		licenseKey: apmLicenseKey,
+		appName: "sportz",
+		port: PORT,
+	});
+} else {
+	console.warn("APM_LICENSE_KEY is not set; skipping APM initialization.");
+}
 
 const app = express();
 const server = http.createServer(app);
