@@ -1,6 +1,15 @@
 import AgentAPI from "apminsight";
 
-AgentAPI.config();
+const apmLicenseKey = process.env.APM_LICENSE_KEY;
+if (apmLicenseKey) {
+	AgentAPI.config({
+		licenseKey: apmLicenseKey,
+		appName: "sportz",
+		port: 10000,
+	});
+} else {
+	console.warn("APM_LICENSE_KEY is not set; skipping APM initialization.");
+}
 
 import http from "node:http";
 import express from "express";
