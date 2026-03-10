@@ -5,8 +5,8 @@ export const listCommentaryQuerySchema = z.object({
 });
 
 export const createCommentarySchema = z.object({
-	minute: z.coerce.number().int().nonnegative(),
-	sequence: z.coerce.number().int().nonnegative(),
+	minute: z.number().int().nonnegative(),
+	sequence: z.number().int().nonnegative(),
 	period: z.string().trim().min(1),
 	eventType: z.string().trim().min(1),
 	actor: z.string().trim().min(1),
