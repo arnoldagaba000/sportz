@@ -1,3 +1,7 @@
+import AgentAPI from "apminsight";
+
+AgentAPI.config();
+
 import http from "node:http";
 import express from "express";
 import { securityMiddleware } from "./arcjet.js";
