@@ -1,3 +1,7 @@
+import AgentAPI from "apminsight";
+
+AgentAPI.config();
+
 import http from "node:http";
 import express from "express";
 import { securityMiddleware } from "./arcjet.js";
@@ -17,7 +21,7 @@ app.get("/", (req, res) => {
 	res.send("Server is running");
 });
 
-app.use(securityMiddleware());
+// app.use(securityMiddleware());
 
 app.use("/matches", matchRouter);
 app.use("/matches/:id/commentary", commentaryRouter);
