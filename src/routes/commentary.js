@@ -83,11 +83,9 @@ commentaryRouter.post("/", async (req, res) => {
 
 		res.status(201).json({ data: event });
 	} catch (error) {
-		const errorMessage = String(error?.message ?? "");
 		const isForeignKeyViolation =
-			error?.code === "23503" ||
-			(errorMessage.toLowerCase().includes("foreign key") &&
-				errorMessage.includes("match_id"));
+			error?.code === "23503" &&
+			String(error?.detail ?? "").includes("match_id");
 
 		if (isForeignKeyViolation) {
 			res.status(404).json({ error: "Match not found" });
