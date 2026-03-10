@@ -83,6 +83,15 @@ commentaryRouter.post("/", async (req, res) => {
 
 		res.status(201).json({ data: event });
 	} catch (error) {
+		const isForeignKeyViolation =
+			error?.code === "23503" &&
+			String(error?.detail ?? "").includes("match_id");
+
+		if (isForeignKeyViolation) {
+			res.status(404).json({ error: "Match not found" });
+			return;
+		}
+
 		console.error("Failed to create commentary:", error);
 		res.status(500).json({
 			error: "Failed to create commentary",
